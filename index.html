@@ -358,10 +358,11 @@
     <details class="diag" id="diag">
       <summary>Something not working? Show details</summary>
       <div class="adv">
-        <p class="hint">This is a record of what the page did. Copy it and send it to us so we can find the problem. It does not contain your email address.</p>
+        <p class="hint">This is a full record of what the page did, step by step, including earlier visits in this browser. Copy it or save it and send it to us so we can find the problem. It does not contain your name or email address.</p>
         <textarea id="diagText" readonly rows="9" aria-label="Activity report"></textarea>
         <div class="actions">
           <button class="btn ghost" type="button" id="diagCopy">Copy the report</button>
+          <button class="btn ghost" type="button" id="diagSave">Save the report as a file</button>
           <span class="hint" id="diagCopied" role="status"></span>
         </div>
       </div>
@@ -391,7 +392,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   var FIELDS = Object.keys(DEFAULTS);
   var MAX_MONTHS = 600; // 50 years max
   var S = Object.assign({}, DEFAULTS);
-  var APP_VERSION = "1.1.0";
+  var APP_VERSION = "1.2.0";
 
   /* Every number is forced into a sane range, so a typo or a damaged saved state can never break the maths. */
   var LIMITS = { currentAge:[0,120], targetRetirementAge:[0,120], monthlySavings:[0,1e7], monthlyRetirementNeed:[0,1e7], sideIncome:[0,1e7], currentSavings:[0,1e9], investmentReturn:[0,50] };
@@ -402,37 +403,92 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   }
 
   /* ---------- activity report: what the page did, kept across reloads, shown under "Something not working?" ---------- */
+  /* Every line: UTC time, seconds since the page opened, visit id, level, step, details.
+     400 lines are kept, across visits. Names and email addresses are never written here. */
   var LOG = [];
+  var LOG_MAX = 400;
+  var T0 = Date.now();
+  var VISIT = Math.random().toString(36).slice(2, 6);
+  var storageOk = true;
   try{
     var oldLog = JSON.parse(localStorage.getItem("ghl_income_log") || "[]");
-    if(Array.isArray(oldLog)) LOG = oldLog.filter(function(l){ return typeof l === "string"; }).slice(-40);
-  }catch(e){}
-  function errText(e){ return e ? ((e.name ? e.name + ": " : "") + (e.message || String(e))) : "unknown"; }
-  function log(step, detail){
-    LOG.push(new Date().toISOString() + "  " + step + (detail ? "  (" + detail + ")" : ""));
-    if(LOG.length > 80) LOG = LOG.slice(-80);
-    try{ localStorage.setItem("ghl_income_log", JSON.stringify(LOG)); }catch(e){}
-    try{ console.info("[calculator] " + step + (detail ? " (" + detail + ")" : "")); }catch(e){}
+    if(Array.isArray(oldLog)) LOG = oldLog.filter(function(l){ return typeof l === "string"; }).slice(-300);
+  }catch(e){ storageOk = false; }
+
+  function errText(e){
+    if(!e) return "unknown";
+    var t = (e.name ? e.name + ": " : "") + (e.message || String(e));
+    if(e.stack){
+      var where = String(e.stack).split("\n").slice(1, 4).map(function(l){
+        return l.trim().replace(/https?:\/\/[^\s)]*\//g, "");
+      }).join(" < ");
+      if(where) t += " [" + where + "]";
+    }
+    return t;
+  }
+  function levelOf(step, given){
+    if(given) return given;
+    if(/unexpected|failed|could not|dropped|did not load/.test(step)) return "ERROR";
+    if(/not |missing|kept|lost|did not/.test(step)) return "WARN";
+    return "INFO";
+  }
+  function log(step, detail, lvl){
+    lvl = levelOf(step, lvl);
+    var line = new Date().toISOString() + " +" + ((Date.now() - T0) / 1000).toFixed(2) + "s [" + VISIT + "] " +
+      (lvl + " ").slice(0, 5) + " " + step + (detail ? "  (" + detail + ")" : "");
+    LOG.push(line);
+    if(LOG.length > LOG_MAX) LOG = LOG.slice(-LOG_MAX);
+    try{ localStorage.setItem("ghl_income_log", JSON.stringify(LOG)); }catch(e){ storageOk = false; }
+    try{ (lvl === "ERROR" ? console.error : lvl === "WARN" ? console.warn : console.info).call(console, "[calculator] " + line); }catch(e){}
     try{ var d = $("diag"); if(d && d.open) $("diagText").value = report(); }catch(e){}
   }
+  function environment(){
+    var embedded = false, from = "none", zone = "";
+    try{ embedded = window.self !== window.top; }catch(e){ embedded = true; }
+    try{ if(document.referrer) from = new URL(document.referrer).host; }catch(e){ from = "unknown"; }
+    try{ zone = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
+    return [
+      "version " + APP_VERSION,
+      "screen " + window.innerWidth + "x" + window.innerHeight + " at " + (window.devicePixelRatio || 1) + "x",
+      "language " + navigator.language,
+      "time zone " + zone,
+      "online " + (navigator.onLine !== false),
+      "embedded in another page " + embedded,
+      "came from " + from,
+      "storage works " + storageOk
+    ].join(", ");
+  }
   function report(){
+    var queue = readQueue();
+    var count = function(word){ return LOG.filter(function(l){ return l.indexOf("] " + word) > -1; }).length; };
     return [
       "GHL Income Calculator " + APP_VERSION,
+      "Report made: " + new Date().toISOString() + ", visit " + VISIT,
       "Page: " + location.href.split("#")[0].split("?")[0],
       "Browser: " + navigator.userAgent,
-      "Online: " + (navigator.onLine !== false),
+      "Now: " + environment(),
       "PDF tool loaded: " + pdfLibReady(),
       "Webhook set: " + (WEBHOOK_URL ? "yes" : "no"),
-      "Sign-ups waiting to be sent: " + readQueue().length,
+      "Sign-ups waiting to be sent: " + queue.length + (queue.length ? " (" + queue.map(function(x){
+        return "queued " + new Date(x.t).toISOString() + ", " + (x.tries || 0) + " tries";
+      }).join("; ") + ")" : ""),
       "Numbers: " + JSON.stringify(S),
+      "In this report: " + count("ERROR") + " errors, " + count("WARN") + " warnings, " + LOG.length + " lines",
       ""
     ].concat(LOG).join("\n");
   }
+  /* Capture phase, so files that fail to load (scripts, fonts, styles) are recorded too. */
   window.addEventListener("error", function(ev){
-    log("unexpected error", (ev.message || "resource failed") + (ev.lineno ? " at line " + ev.lineno : ""));
-  });
-  window.addEventListener("unhandledrejection", function(ev){ log("unexpected error", errText(ev.reason)); });
-  log("page opened");
+    var t = ev.target;
+    if(t && t !== window && (t.src || t.href)){
+      log("resource did not load", (t.tagName || "").toLowerCase() + " " + String(t.src || t.href).split("?")[0], "ERROR");
+      return;
+    }
+    log("unexpected error", (ev.message || "no message") + (ev.lineno ? " at line " + ev.lineno + ":" + ev.colno : "") +
+      (ev.error ? ", " + errText(ev.error) : ""), "ERROR");
+  }, true);
+  window.addEventListener("unhandledrejection", function(ev){ log("unexpected error", "promise: " + errText(ev.reason), "ERROR"); });
+  log("page opened", environment());
 
   var k = function(n){ return "$" + (n / 1000).toFixed(0) + "k"; };
 
@@ -638,8 +694,32 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     save();
   }
 
+  /* Typing is logged once it pauses: which numbers changed, and the result the page then showed. */
+  var inputTimer = null, typed = {};
+  function noteInput(f, raw){
+    typed[f] = raw;
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(function(){
+      var parts = Object.keys(typed).map(function(key){
+        var rawText = String(typed[key]).trim();
+        return key + " = " + S[key] + (String(S[key]) !== rawText ? " (typed \"" + rawText.slice(0, 20) + "\")" : "");
+      });
+      typed = {};
+      log("numbers changed", parts.join(", "));
+      logResult();
+    }, 800);
+  }
+  function logResult(){
+    try{
+      var r = results();
+      log("result shown", "freedom age " + (r.reachedWithin50Years ? r.freedomAge : "not reached in 50 years") +
+        ", portfolio needed " + r.portfolioNeeded + ", on track " + r.onTrack +
+        ", required monthly savings " + r.requiredMonthlySavings + ", years to freedom " + r.yearsToFreedom);
+    }catch(e){ log("result could not be read", errText(e)); }
+  }
+
   /* The page never shows a raw error. If drawing the numbers fails, it says so and offers a reset. */
-  function showNotice(text){ $("noticeText").textContent = text; $("notice").hidden = false; }
+  function showNotice(text){ $("noticeText").textContent = text; $("notice").hidden = false; log("notice shown", text, "WARN"); }
   function safeRender(){
     try{ render(); $("notice").hidden = true; }
     catch(e){
@@ -660,6 +740,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     el.addEventListener("input", function(){
       S[f] = this.value === "" ? 0 : clean(f, this.value);
       safeRender();
+      noteInput(f, this.value);
     });
     /* When the field is left, show the number that is actually being used. */
     el.addEventListener("change", function(){ if(this.value !== "" && Number(this.value) !== S[f]) this.value = S[f]; });
@@ -686,23 +767,31 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       function(res){ clearTimeout(timer); return res; },
       function(e){ clearTimeout(timer); throw e; });
   }
-  function postLead(payload){
+  function postLead(payload, attempt){
+    var host = "";
+    try{ host = new URL(WEBHOOK_URL).host; }catch(e){ host = "an address that is not a valid URL"; }
+    var t0 = Date.now();
+    log("sign-up send started", "try " + attempt + ", JSON to " + host + ", online " + (navigator.onLine !== false));
     return timedFetch(WEBHOOK_URL, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body:JSON.stringify(payload), keepalive:true
     }, 10000).then(function(res){
-      if(res.ok) return "confirmed by the server";
-      throw new Error("HTTP " + res.status);
+      var ms = Date.now() - t0;
+      if(res.ok) return "confirmed by the server, HTTP " + res.status + ", " + ms + " ms";
+      return res.text().catch(function(){ return ""; }).then(function(body){
+        throw new Error("HTTP " + res.status + " after " + ms + " ms" + (body ? ", reply: " + body.slice(0, 200) : ""));
+      });
     }).catch(function(e){
       /* If the browser blocks the JSON request (CORS) or the server refuses it, resend as a plain form post. */
-      log("sign-up JSON send failed, trying a form post", errText(e));
+      log("sign-up JSON send failed, trying a form post", (Date.now() - t0) + " ms, " + errText(e), "WARN");
       var flat = new URLSearchParams();
       flat.append("name", payload.name);
       flat.append("email", payload.email);
       flat.append("source", payload.source);
       Object.keys(payload.results).forEach(function(key){ flat.append(key, String(payload.results[key])); });
+      var t1 = Date.now();
       return timedFetch(WEBHOOK_URL, { method:"POST", mode:"no-cors", body:flat, keepalive:true }, 10000)
-        .then(function(){ return "sent, the server reply is not readable from the browser"; });
+        .then(function(){ return "form post went out in " + (Date.now() - t1) + " ms, the server reply is not readable from the browser"; });
     });
   }
   function flushQueue(){
@@ -711,7 +800,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     if(!q.length) return;
     var item = q[0];
     flushing = true;
-    postLead(item.payload).then(function(how){
+    postLead(item.payload, (item.tries || 0) + 1).then(function(how){
       log("sign-up sent", how);
       writeQueue(readQueue().filter(function(x){ return x.t !== item.t; }));
       flushing = false;
@@ -736,6 +825,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       var q = readQueue();
       q.push({ t:Date.now(), tries:0, payload:payload });
       writeQueue(q);
+      log("sign-up put on the waiting list", "waiting now: " + readQueue().length + ", name length " + String(payload.name).length);
       flushQueue();
     }catch(e){ log("sign-up could not be queued", errText(e)); }
   }
@@ -899,7 +989,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   ];
   var PLAIN_PDF = false;                    // true while a failed PDF is rebuilt in the simplest possible form
   var pdfAssetsReady = fontsReady;   // anything else the PDF waits for before it is built
-  var busy = false, lastPdfUrl = null;
+  var busy = false, lastPdfUrl = null, pdfStarted = 0;
 
   function pdfLibReady(){ return !!(window.jspdf && window.jspdf.jsPDF); }
   function loadScript(url, ms){
@@ -927,7 +1017,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     }, Promise.resolve(false));
   }
 
-  function setStatus(text){ $("thanksMsg").textContent = text; }
+  function setStatus(text){ $("thanksMsg").textContent = text; log("status shown", text, "INFO"); }
   function setBusy(on){
     busy = on;
     $("planSubmit").disabled = on;
@@ -948,7 +1038,8 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   var DONE = "Your PDF is ready and the download has started. Check your downloads folder. Nothing else is running, so you can close this page.";
   function savePdf(doc){
     var blob = doc.output("blob");
-    log("PDF created", Math.round(blob.size / 1024) + " KB");
+    log("PDF created", Math.round(blob.size / 1024) + " KB, " + doc.getNumberOfPages() + " page, font " + doc.getFont().fontName +
+      ", " + (Date.now() - pdfStarted) + " ms since the request");
     if(!IN_VIEWER){
       /* A second way to get the file, for browsers that ignore the download (some in-app browsers on phones). */
       try{
@@ -982,8 +1073,10 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     if(busy) return;
     setBusy(true);
     setStatus("Preparing your PDF. This takes a few seconds, please keep this page open.");
-    log("PDF requested");
+    pdfStarted = Date.now();
+    log("PDF requested", "PDF tool " + (pdfLibReady() ? "already loaded" : "not loaded") + ", online " + (navigator.onLine !== false));
     ensurePdfLib().then(function(ok){
+      log("PDF tool check done", (ok ? "ready" : "not available") + ", " + (Date.now() - pdfStarted) + " ms", ok ? "INFO" : "ERROR");
       if(!ok){
         setStatus("The PDF tool could not load, most likely because the connection dropped. Your numbers are still here. Check your connection, then press the button below.");
         return;
@@ -1014,12 +1107,13 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     if(problem){
       err.textContent = problem; err.hidden = false;
       (name ? $("leadEmail") : $("leadName")).focus();
-      log("form not accepted", name ? "email" : "name");
+      log("form not accepted", "message shown: " + problem + " Name length " + name.length + ", email length " + email.length);
       return;
     }
     err.hidden = true;
     leadName = name;
-    log("form accepted");
+    log("form accepted", "name length " + name.length);
+    logResult();
     sendLead({ name:name, email:email, source:SOURCE, results:results() });
     $("planGate").hidden = true;
     $("planThanks").hidden = false;
@@ -1038,14 +1132,53 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     catch(e){ manual(); }
   });
 
+  $("diagSave").addEventListener("click", function(){
+    var note = $("diagCopied");
+    try{
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([report()], { type:"text/plain" }));
+      a.download = "ghl-income-calculator-report.txt";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      note.textContent = "Saved to your downloads.";
+      log("report saved as a file");
+    }catch(e){
+      note.textContent = "Saving did not work here. Use Copy the report.";
+      log("report could not be saved", errText(e));
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
+    d.addEventListener("toggle", function(){
+      var s = d.querySelector("summary");
+      log("section " + (d.open ? "opened" : "closed"), s ? s.textContent.trim().slice(0, 50) : "");
+    });
+  });
+  var formStarted = false;
+  ["leadName", "leadEmail"].forEach(function(id){
+    $(id).addEventListener("focus", function(){ if(!formStarted){ formStarted = true; log("form started"); } });
+  });
+  $("programLink").addEventListener("click", function(){ log("program link clicked"); });
+  $("pdfOpen").addEventListener("click", function(){ log("PDF opened through the link"); });
+  var jump = document.querySelector('a[href="#gate"]');
+  if(jump) jump.addEventListener("click", function(){ log("jumped to the PDF form"); });
+  document.addEventListener("visibilitychange", function(){
+    log(document.hidden ? "page hidden" : "page visible again", busy ? "a PDF was being prepared" : "");
+  });
+  window.addEventListener("pagehide", function(){
+    log("page closed or left", (busy ? "a PDF was still being prepared" : "nothing was running") + ", sign-ups waiting: " + readQueue().length);
+  });
+  window.addEventListener("offline", function(){ log("connection lost"); });
+
   try{
     load();
     FIELDS.forEach(function(f){ $(f).value = S[f]; });
   }catch(e){ log("saved numbers could not be restored", errText(e)); }
   safeRender();
-  log("page ready", "PDF tool " + (pdfLibReady() ? "loaded" : "not loaded yet"));
+  log("page ready", "PDF tool " + (pdfLibReady() ? "loaded" : "not loaded yet") + ", numbers " + JSON.stringify(S) +
+    ", sign-ups waiting: " + readQueue().length);
+  logResult();
   flushQueue();
-  window.addEventListener("online", function(){ log("connection is back"); flushQueue(); });
+  window.addEventListener("online", function(){ log("connection is back", "sign-ups waiting: " + readQueue().length); flushQueue(); });
 })();
 </script>
 </body>
