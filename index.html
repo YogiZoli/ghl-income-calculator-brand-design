@@ -178,6 +178,17 @@
   .quote .more{font-size:var(--text-sm);color:var(--muted-foreground);line-height:1.5}
   .disc{font-size:var(--text-xs);color:var(--muted-foreground);line-height:1.6}
 
+  /* status, recovery and the activity report */
+  .btn[disabled]{opacity:.6;cursor:default;animation:none}
+  .notice{background:var(--warning-surface);color:var(--warning-text);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);display:flex;gap:var(--space-4);align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:var(--text-sm);font-weight:600}
+  .hint a{color:var(--link);font-family:var(--font-mono);text-decoration:none}
+  .hint a:hover{color:var(--link-hover);text-decoration:underline;text-underline-offset:2px}
+  .gate{display:flex;flex-direction:column;gap:var(--space-5)}
+  .diag{border:0}
+  .diag summary{padding:0;min-height:0;font-size:var(--text-xs);font-weight:600;color:var(--muted-foreground)}
+  .diag .adv{padding:var(--space-4) 0 0}
+  .diag textarea{width:100%;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--surface-alt);color:var(--foreground);font-family:var(--font-mono);font-size:.75rem;line-height:1.5;padding:var(--space-4);resize:vertical}
+
   @media (prefers-reduced-motion: reduce){
     *{animation:none!important;transition-duration:.01ms!important}
   }
@@ -187,6 +198,11 @@
 <div class="hairline"></div>
 
 <div class="card">
+  <noscript><p class="notice">This calculator needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
+  <div class="notice" id="notice" role="alert" hidden>
+    <span id="noticeText"></span>
+    <button class="btn ghost" type="button" id="noticeReset">Reset the calculator</button>
+  </div>
 
   <header class="hero">
     <h1>GHL Income Calculator</h1>
@@ -332,12 +348,24 @@
     </div>
     <div id="planThanks" class="gateform" hidden>
       <h2 id="thanksTitle" tabindex="-1">Your Income Plan is ready</h2>
-      <p class="hint" id="thanksMsg" role="status">Check your downloads for the PDF.</p>
+      <p class="hint" id="thanksMsg" role="status">Preparing your PDF.</p>
       <p class="cta">Next step: build this plan with a group in my 6-pillar cohort program. <a id="programLink" href="#" target="_blank" rel="noopener">See the program</a></p>
       <div class="actions">
-        <button class="btn" type="button" id="planAgain">Download the PDF again</button>
+        <button class="btn ghost" type="button" id="planAgain">Download the PDF again</button>
       </div>
+      <p class="hint" id="pdfOpenWrap" hidden>Download did not start? <a id="pdfOpen" href="#" target="_blank" rel="noopener">Open the PDF in a new tab</a></p>
     </div>
+    <details class="diag" id="diag">
+      <summary>Something not working? Show details</summary>
+      <div class="adv">
+        <p class="hint">This is a record of what the page did. Copy it and send it to us so we can find the problem. It does not contain your email address.</p>
+        <textarea id="diagText" readonly rows="9" aria-label="Activity report"></textarea>
+        <div class="actions">
+          <button class="btn ghost" type="button" id="diagCopy">Copy the report</button>
+          <span class="hint" id="diagCopied" role="status"></span>
+        </div>
+      </div>
+    </details>
   </section>
 
   <section class="quote">
@@ -363,6 +391,48 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   var FIELDS = Object.keys(DEFAULTS);
   var MAX_MONTHS = 600; // 50 years max
   var S = Object.assign({}, DEFAULTS);
+  var APP_VERSION = "1.1.0";
+
+  /* Every number is forced into a sane range, so a typo or a damaged saved state can never break the maths. */
+  var LIMITS = { currentAge:[0,120], targetRetirementAge:[0,120], monthlySavings:[0,1e7], monthlyRetirementNeed:[0,1e7], sideIncome:[0,1e7], currentSavings:[0,1e9], investmentReturn:[0,50] };
+  function clean(f, v){
+    var n = Number(v);
+    if(!isFinite(n)) n = DEFAULTS[f];
+    return Math.min(LIMITS[f][1], Math.max(LIMITS[f][0], n));
+  }
+
+  /* ---------- activity report: what the page did, kept across reloads, shown under "Something not working?" ---------- */
+  var LOG = [];
+  try{
+    var oldLog = JSON.parse(localStorage.getItem("ghl_income_log") || "[]");
+    if(Array.isArray(oldLog)) LOG = oldLog.filter(function(l){ return typeof l === "string"; }).slice(-40);
+  }catch(e){}
+  function errText(e){ return e ? ((e.name ? e.name + ": " : "") + (e.message || String(e))) : "unknown"; }
+  function log(step, detail){
+    LOG.push(new Date().toISOString() + "  " + step + (detail ? "  (" + detail + ")" : ""));
+    if(LOG.length > 80) LOG = LOG.slice(-80);
+    try{ localStorage.setItem("ghl_income_log", JSON.stringify(LOG)); }catch(e){}
+    try{ console.info("[calculator] " + step + (detail ? " (" + detail + ")" : "")); }catch(e){}
+    try{ var d = $("diag"); if(d && d.open) $("diagText").value = report(); }catch(e){}
+  }
+  function report(){
+    return [
+      "GHL Income Calculator " + APP_VERSION,
+      "Page: " + location.href.split("#")[0].split("?")[0],
+      "Browser: " + navigator.userAgent,
+      "Online: " + (navigator.onLine !== false),
+      "PDF tool loaded: " + pdfLibReady(),
+      "Webhook set: " + (WEBHOOK_URL ? "yes" : "no"),
+      "Sign-ups waiting to be sent: " + readQueue().length,
+      "Numbers: " + JSON.stringify(S),
+      ""
+    ].concat(LOG).join("\n");
+  }
+  window.addEventListener("error", function(ev){
+    log("unexpected error", (ev.message || "resource failed") + (ev.lineno ? " at line " + ev.lineno : ""));
+  });
+  window.addEventListener("unhandledrejection", function(ev){ log("unexpected error", errText(ev.reason)); });
+  log("page opened");
 
   var k = function(n){ return "$" + (n / 1000).toFixed(0) + "k"; };
 
@@ -372,7 +442,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       var raw = localStorage.getItem("ghl_income_state");
       if(!raw) return;
       var p = JSON.parse(raw);
-      FIELDS.forEach(function(f){ if(p && typeof p[f] === "number" && isFinite(p[f])) S[f] = p[f]; });
+      FIELDS.forEach(function(f){ if(p && typeof p[f] === "number") S[f] = clean(f, p[f]); });
     }catch(e){}
   }
 
@@ -568,33 +638,106 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     save();
   }
 
+  /* The page never shows a raw error. If drawing the numbers fails, it says so and offers a reset. */
+  function showNotice(text){ $("noticeText").textContent = text; $("notice").hidden = false; }
+  function safeRender(){
+    try{ render(); $("notice").hidden = true; }
+    catch(e){
+      log("showing the numbers failed", errText(e));
+      showNotice("Your numbers could not be shown. Reset the calculator to start again.");
+    }
+  }
+  $("noticeReset").addEventListener("click", function(){
+    S = Object.assign({}, DEFAULTS);
+    try{ localStorage.removeItem("ghl_income_state"); }catch(e){}
+    FIELDS.forEach(function(f){ $(f).value = S[f]; });
+    log("calculator reset");
+    safeRender();
+  });
+
   FIELDS.forEach(function(f){
     var el = $(f);
     el.addEventListener("input", function(){
-      var n = this.value === "" ? 0 : Number(this.value);
-      S[f] = isFinite(n) ? n : 0;
-      render();
+      S[f] = this.value === "" ? 0 : clean(f, this.value);
+      safeRender();
     });
+    /* When the field is left, show the number that is actually being used. */
+    el.addEventListener("change", function(){ if(this.value !== "" && Number(this.value) !== S[f]) this.value = S[f]; });
     el.addEventListener("focus", function(){ if(this.value === "0") this.select(); });
   });
 
   /* ---------- lead capture ---------- */
+  /* A sign-up is written to a waiting list in this browser first, then sent. If the send fails
+     (offline, timeout, server error) it stays on the list and is sent again when the page is
+     next opened or the connection comes back. It is removed only after a send goes through. */
+  var QUEUE_KEY = "ghl_income_pending_leads";
+  var MAX_TRIES = 8;
+  var flushing = false;
+  function readQueue(){
+    try{ var q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); return Array.isArray(q) ? q : []; }
+    catch(e){ return []; }
+  }
+  function writeQueue(q){ try{ localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-20))); }catch(e){} }
+  function timedFetch(url, opts, ms){
+    var ctl = window.AbortController ? new AbortController() : null;
+    if(ctl) opts.signal = ctl.signal;
+    var timer = setTimeout(function(){ if(ctl) ctl.abort(); }, ms);
+    return fetch(url, opts).then(
+      function(res){ clearTimeout(timer); return res; },
+      function(e){ clearTimeout(timer); throw e; });
+  }
+  function postLead(payload){
+    return timedFetch(WEBHOOK_URL, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload), keepalive:true
+    }, 10000).then(function(res){
+      if(res.ok) return "confirmed by the server";
+      throw new Error("HTTP " + res.status);
+    }).catch(function(e){
+      /* If the browser blocks the JSON request (CORS) or the server refuses it, resend as a plain form post. */
+      log("sign-up JSON send failed, trying a form post", errText(e));
+      var flat = new URLSearchParams();
+      flat.append("name", payload.name);
+      flat.append("email", payload.email);
+      flat.append("source", payload.source);
+      Object.keys(payload.results).forEach(function(key){ flat.append(key, String(payload.results[key])); });
+      return timedFetch(WEBHOOK_URL, { method:"POST", mode:"no-cors", body:flat, keepalive:true }, 10000)
+        .then(function(){ return "sent, the server reply is not readable from the browser"; });
+    });
+  }
+  function flushQueue(){
+    if(flushing || !WEBHOOK_URL) return;
+    var q = readQueue();
+    if(!q.length) return;
+    var item = q[0];
+    flushing = true;
+    postLead(item.payload).then(function(how){
+      log("sign-up sent", how);
+      writeQueue(readQueue().filter(function(x){ return x.t !== item.t; }));
+      flushing = false;
+      flushQueue();
+    }, function(e){
+      var rest = readQueue().filter(function(x){ return x.t !== item.t; });
+      item.tries = (item.tries || 0) + 1;
+      if(item.tries < MAX_TRIES){
+        rest.push(item);
+        log("sign-up not sent, kept for another try", "try " + item.tries + ", " + errText(e));
+      } else {
+        log("sign-up dropped after " + MAX_TRIES + " tries", errText(e));
+      }
+      writeQueue(rest);
+      flushing = false;
+      if(item.tries < MAX_TRIES) setTimeout(flushQueue, 30000);
+    });
+  }
   function sendLead(payload){
-    if(!WEBHOOK_URL) return;
+    if(!WEBHOOK_URL){ log("sign-up not sent", "no webhook is set"); return; }
     try{
-      fetch(WEBHOOK_URL, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload), keepalive:true
-      }).catch(function(){
-        /* If the browser blocks the JSON request (CORS), resend as a plain form post. */
-        var flat = new URLSearchParams();
-        flat.append("name", payload.name);
-        flat.append("email", payload.email);
-        flat.append("source", payload.source);
-        Object.keys(payload.results).forEach(function(key){ flat.append(key, String(payload.results[key])); });
-        return fetch(WEBHOOK_URL, { method:"POST", mode:"no-cors", body:flat, keepalive:true });
-      }).catch(function(){});
-    }catch(e){}
+      var q = readQueue();
+      q.push({ t:Date.now(), tries:0, payload:payload });
+      writeQueue(q);
+      flushQueue();
+    }catch(e){ log("sign-up could not be queued", errText(e)); }
   }
 
   /* ---------- PDF ---------- */
@@ -623,13 +766,16 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       return btoa(bin);
     });
   }
-  var fontsReady = Promise.all([fontData("fonts/OpenSans-400.ttf"), fontData("fonts/OpenSans-700.ttf")])
-    .then(function(f){ PDF_FONTS = f; }, function(){ PDF_FONTS = null; });
+  var fontsReady = Promise.race([
+    Promise.all([fontData("fonts/OpenSans-400.ttf"), fontData("fonts/OpenSans-700.ttf")]),
+    new Promise(function(_, reject){ setTimeout(function(){ reject(new Error("timeout")); }, 5000); })
+  ]).then(function(f){ PDF_FONTS = f; log("PDF fonts loaded"); },
+          function(e){ PDF_FONTS = null; log("PDF fonts did not load, the PDF will use Helvetica", errText(e)); });
 
   function buildPdf(name, r){
     var doc = new window.jspdf.jsPDF({ unit:"pt", format:"a4" });
     var FONT = "helvetica";
-    if(PDF_FONTS){
+    if(PDF_FONTS && !PLAIN_PDF){
       doc.addFileToVFS("OpenSans-400.ttf", PDF_FONTS[0]); doc.addFont("OpenSans-400.ttf", "OpenSans", "normal");
       doc.addFileToVFS("OpenSans-700.ttf", PDF_FONTS[1]); doc.addFont("OpenSans-700.ttf", "OpenSans", "bold");
       FONT = "OpenSans";
@@ -652,15 +798,19 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     var pre = "Prepared for ";
     doc.setFont(FONT,"normal"); doc.text(pre, M, 99);
     var px = M + doc.getTextWidth(pre);
+    var today = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    var avail = W - M - px - doc.getTextWidth(today) - 16;
     doc.setFont(FONT,"bold");
     if(/[^\x20-\x7E¡-ÿ]/.test(name) && (FONT === "helvetica" || /[^\x20-\u024F]/.test(name))){
       var img = textImage(name, 12, "#FFFFFF");
-      doc.addImage(img.url, "PNG", px, 99 - img.base, img.w, img.h);
+      var sc = Math.min(1, avail / img.w);
+      doc.addImage(img.url, "PNG", px, 99 - img.base * sc, img.w * sc, img.h * sc);
     } else {
-      doc.text(name, px, 99);
+      var shown = name;
+      while(shown.length > 1 && doc.getTextWidth(shown) > avail) shown = shown.slice(0, -1);
+      doc.text(shown === name ? name : shown + "...", px, 99);
     }
     doc.setFont(FONT,"normal");
-    var today = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
     doc.text(today, W - M, 99, { align:"right" });
 
     /* the three headline results */
@@ -726,8 +876,10 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     white(); doc.setFont(FONT,"bold"); doc.setFontSize(13);
     doc.text("Next step: build this plan with a group in my 6-pillar cohort program.", M + 18, cy + 30);
     doc.setFontSize(11);
-    doc.textWithLink(PROGRAM_URL, M + 18, cy + 52, { url:PROGRAM_URL });
-    doc.link(M, cy, CW, 74, { url:PROGRAM_URL });
+    if(PROGRAM_URL){
+      doc.textWithLink(PROGRAM_URL, M + 18, cy + 52, { url:PROGRAM_URL });
+      doc.link(M, cy, CW, 74, { url:PROGRAM_URL });
+    }
 
     muted(); doc.setFont(FONT,"normal"); doc.setFontSize(8.5);
     doc.text("For educational purposes only. Not financial, investment, tax, or legal advice. Results are estimates.", W / 2, H - 48, { align:"center" });
@@ -739,36 +891,122 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     ? window.claude.use("downloads").catch(function(){ return null; })
     : Promise.resolve(null);
 
+  var IN_VIEWER = !!(window.claude && typeof window.claude.use === "function");
   var FILE_NAME = "ghl-income-plan.pdf";
-  function deliverPdf(name){ fontsReady.then(function(){ deliverPdfNow(name); }); }
-  function deliverPdfNow(name){
-    var msg = $("thanksMsg");
-    if(!window.jspdf || !window.jspdf.jsPDF){
-      msg.textContent = "The PDF tool did not load. Check your connection, reload the page and try again.";
+  var PDF_LIB_URLS = [
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+  ];
+  var PLAIN_PDF = false;                    // true while a failed PDF is rebuilt in the simplest possible form
+  var pdfAssetsReady = fontsReady;   // anything else the PDF waits for before it is built
+  var busy = false, lastPdfUrl = null;
+
+  function pdfLibReady(){ return !!(window.jspdf && window.jspdf.jsPDF); }
+  function loadScript(url, ms){
+    return new Promise(function(resolve){
+      var s = document.createElement("script"), done = false;
+      function finish(){ if(done) return; done = true; clearTimeout(timer); resolve(); }
+      var timer = setTimeout(finish, ms);
+      s.onload = finish; s.onerror = finish;
+      s.src = url;
+      document.head.appendChild(s);
+    });
+  }
+  /* If the PDF tool did not arrive with the page (slow or blocked network), fetch it again, from a second source if needed. */
+  function ensurePdfLib(){
+    if(pdfLibReady()) return Promise.resolve(true);
+    log("PDF tool missing, loading it again");
+    return PDF_LIB_URLS.reduce(function(chain, url){
+      return chain.then(function(ok){
+        if(ok) return true;
+        return loadScript(url, 12000).then(function(){
+          log("PDF tool " + (pdfLibReady() ? "loaded" : "did not load"), url.split("/")[2]);
+          return pdfLibReady();
+        });
+      });
+    }, Promise.resolve(false));
+  }
+
+  function setStatus(text){ $("thanksMsg").textContent = text; }
+  function setBusy(on){
+    busy = on;
+    $("planSubmit").disabled = on;
+    $("planAgain").disabled = on;
+    $("planAgain").textContent = on ? "Preparing your PDF..." : "Download the PDF again";
+  }
+
+  function buildPdfSafe(name){
+    try{ return buildPdf(name, results()); }
+    catch(e){ log("PDF build failed, trying the plain version", errText(e)); }
+    try{
+      PLAIN_PDF = true;
+      return buildPdf(name.replace(/[^\x20-\x7E]/g, "").trim() || "you", results());
+    }catch(e2){ log("PDF build failed", errText(e2)); return null; }
+    finally{ PLAIN_PDF = false; }
+  }
+
+  var DONE = "Your PDF is ready and the download has started. Check your downloads folder. Nothing else is running, so you can close this page.";
+  function savePdf(doc){
+    var blob = doc.output("blob");
+    log("PDF created", Math.round(blob.size / 1024) + " KB");
+    if(!IN_VIEWER){
+      /* A second way to get the file, for browsers that ignore the download (some in-app browsers on phones). */
+      try{
+        if(lastPdfUrl) URL.revokeObjectURL(lastPdfUrl);
+        lastPdfUrl = URL.createObjectURL(blob);
+        $("pdfOpen").href = lastPdfUrl;
+        $("pdfOpenWrap").hidden = false;
+      }catch(e){ log("PDF link could not be made", errText(e)); }
+      try{ doc.save(FILE_NAME); log("PDF download started"); setStatus(DONE); }
+      catch(e){
+        log("PDF download did not start", errText(e));
+        setStatus("Your PDF is ready, but this browser did not start the download. Use the link below to open it.");
+      }
       return;
     }
-    var doc;
-    try{ doc = buildPdf(name, results()); }
-    catch(e){ msg.textContent = "The PDF could not be created. Reload the page and try again."; return; }
-    msg.textContent = "Check your downloads for the PDF.";
-    if(!(window.claude && typeof window.claude.use === "function")){ doc.save(FILE_NAME); return; }
-    msg.textContent = "Preparing your PDF.";
-    viewerDownloads.then(function(dl){
-      if(!dl){ doc.save(FILE_NAME); msg.textContent = "Check your downloads for the PDF."; return; }
-      return dl.save({ filename:FILE_NAME, data:doc.output("blob") }).then(function(){
-        msg.textContent = "Check your downloads for the PDF.";
+    return viewerDownloads.then(function(dl){
+      if(!dl){ doc.save(FILE_NAME); log("PDF download started"); setStatus(DONE); return; }
+      return dl.save({ filename:FILE_NAME, data:blob }).then(function(){
+        log("PDF saved through the viewer");
+        setStatus(DONE);
       }, function(err){
-        msg.textContent = (err && err.code === "declined")
-          ? "Download cancelled. Use the button below to get the PDF."
-          : "The download is not available in this view. Open the page in a browser and try again.";
+        log("viewer did not save the PDF", (err && err.code) || errText(err));
+        setStatus((err && err.code === "declined")
+          ? "Download cancelled. Nothing else is running. Press the button below when you want the PDF."
+          : "The download is not available in this view. Open the page in a browser and try again.");
       });
     });
   }
 
+  function deliverPdf(name){
+    if(busy) return;
+    setBusy(true);
+    setStatus("Preparing your PDF. This takes a few seconds, please keep this page open.");
+    log("PDF requested");
+    ensurePdfLib().then(function(ok){
+      if(!ok){
+        setStatus("The PDF tool could not load, most likely because the connection dropped. Your numbers are still here. Check your connection, then press the button below.");
+        return;
+      }
+      return pdfAssetsReady.then(function(){
+        var doc = buildPdfSafe(name);
+        if(!doc){
+          setStatus("The PDF could not be created in this browser. Your numbers are still here. Press the button below to try again, or open this page in another browser.");
+          return;
+        }
+        return savePdf(doc);
+      });
+    }).catch(function(e){
+      log("PDF delivery failed", errText(e));
+      setStatus("The PDF did not come through. Your numbers are still here. Press the button below to try again.");
+    }).then(function(){ setBusy(false); });
+  }
+
   var leadName = "";
-  $("programLink").href = PROGRAM_URL;
+  if(PROGRAM_URL) $("programLink").href = PROGRAM_URL; else $("programLink").hidden = true;
   $("planForm").addEventListener("submit", function(ev){
     ev.preventDefault();
+    if(busy) return;
     var name = $("leadName").value.trim(), email = $("leadEmail").value.trim();
     var err = $("formErr"), problem = "";
     if(!name) problem = "Enter your first name.";
@@ -776,10 +1014,12 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     if(problem){
       err.textContent = problem; err.hidden = false;
       (name ? $("leadEmail") : $("leadName")).focus();
+      log("form not accepted", name ? "email" : "name");
       return;
     }
     err.hidden = true;
     leadName = name;
+    log("form accepted");
     sendLead({ name:name, email:email, source:SOURCE, results:results() });
     $("planGate").hidden = true;
     $("planThanks").hidden = false;
@@ -789,9 +1029,23 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   });
   $("planAgain").addEventListener("click", function(){ deliverPdf(leadName); });
 
-  load();
-  FIELDS.forEach(function(f){ $(f).value = S[f]; });
-  render();
+  $("diag").addEventListener("toggle", function(){ if(this.open) $("diagText").value = report(); });
+  $("diagCopy").addEventListener("click", function(){
+    var box = $("diagText"), note = $("diagCopied");
+    box.value = report();
+    function manual(){ box.focus(); box.select(); note.textContent = "Select the text and copy it."; }
+    try{ navigator.clipboard.writeText(box.value).then(function(){ note.textContent = "Copied."; }, manual); }
+    catch(e){ manual(); }
+  });
+
+  try{
+    load();
+    FIELDS.forEach(function(f){ $(f).value = S[f]; });
+  }catch(e){ log("saved numbers could not be restored", errText(e)); }
+  safeRender();
+  log("page ready", "PDF tool " + (pdfLibReady() ? "loaded" : "not loaded yet"));
+  flushQueue();
+  window.addEventListener("online", function(){ log("connection is back"); flushQueue(); });
 })();
 </script>
 </body>
