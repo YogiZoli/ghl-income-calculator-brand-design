@@ -238,6 +238,34 @@
     100%{box-shadow:0 0 0 3px rgba(217,30,80,.2),0 0 0 0 rgba(255,131,112,0)}
   }
 
+  /* ---------- conditional colour ----------
+     Green (success) once the goal is reached, red (brand fuchsia) while it is not.
+     The title block and the PDF form are always green. Each uses the pale tint of its own colour. */
+  .hero{background:var(--success-surface);border:1.5px solid var(--success);border-radius:var(--radius-xl);padding:var(--space-6)}
+  .hero h1{color:var(--success)}
+  .hero .basis{color:var(--label)}
+
+  .outcome.is-green{background:var(--success-surface);border-color:var(--success);color:var(--success);box-shadow:none}
+  .outcome.is-green .b{color:var(--success)}
+  .outcome.is-red{background:var(--primary-surface);border-color:var(--primary);color:var(--primary-surface-foreground)}
+  .outcome.is-red .b{color:var(--primary-hover);font-size:var(--text-3xl);line-height:1.2}
+  .outcome.is-green .q,.outcome.is-red .q{color:var(--label);border-top-color:var(--border-strong)}
+
+  .plan:has(.is-green){background-color:var(--surface);background-image:none;border-color:var(--success)}
+  .plan:has(.is-green) .trio .v,.plan:has(.is-green) .eyebrow{color:var(--success)}
+  .plan:has(.is-green) hr{border-top-color:var(--success-surface)}
+  .plan:has(.is-red){background-color:var(--surface);background-image:none;border-color:var(--primary)}
+
+  .gate{background-color:var(--success-surface);background-image:none;border-color:var(--success)}
+  .gate h2{color:var(--success)}
+  .gate .btn-primary{background:var(--success);animation-name:cta-halo-green}
+  .gate .btn-primary:hover{background:var(--success);box-shadow:var(--shadow-md)}
+  @keyframes cta-halo-green{
+    0%{box-shadow:0 0 0 0 rgba(11,122,62,.5),0 6px 20px rgba(11,122,62,.25)}
+    70%{box-shadow:0 0 0 14px transparent,0 6px 20px rgba(11,122,62,.25)}
+    100%{box-shadow:0 0 0 0 transparent,0 6px 20px rgba(11,122,62,.25)}
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{animation:none!important;transition-duration:.01ms!important}
   }

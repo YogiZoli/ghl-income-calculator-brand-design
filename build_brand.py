@@ -61,10 +61,10 @@ sub('.test(name)){', '.test(name) && (FONT === "helvetica" || /[^\\x20-\\u024F]/
 sub('doc.setTextColor(30,41,59)', 'doc.setTextColor(14,19,48)')      # ink
 sub('doc.setTextColor(71,85,105)', 'doc.setTextColor(102,108,132)')  # muted text
 sub('doc.setFillColor(4,120,87); doc.rect(0, 0, W, 118, "F");',
-    'doc.setFillColor(217,30,80); doc.rect(0, 0, W, 118, "F");\n'
+    'doc.setFillColor(11,122,62); doc.rect(0, 0, W, 118, "F");\n'
     '    doc.setFillColor(0,177,176); doc.rect(0, 118, W, 4, "F");')
 sub('doc.setFillColor(236,253,245); doc.roundedRect(M, y, CW, 76, 10, 10, "F");',
-    'var skin = [[255,233,239,249,163,184],[227,247,246,85,202,200],[251,242,221,254,200,77]][n - 1];\n'
+    'var skin = [r.onTrack ? [227,243,232,11,122,62] : [255,233,239,217,30,80],[227,247,246,85,202,200],[251,242,221,254,200,77]][n - 1];\n'
     '      doc.setFillColor(skin[0],skin[1],skin[2]); doc.setDrawColor(skin[3],skin[4],skin[5]); doc.setLineWidth(1.2);\n'
     '      doc.roundedRect(M, y, CW, 76, 10, 10, "FD");')
 sub('doc.setFillColor(4,120,87); doc.circle', 'doc.setFillColor(217,30,80); doc.circle')  # step number: fuchsia
@@ -72,6 +72,8 @@ sub('doc.setTextColor(4,120,87)', 'doc.setTextColor(163,20,58)')       # fuchsia
 sub('doc.setDrawColor(203,213,225)', 'doc.setDrawColor(230,232,240)')  # border
 sub('doc.setFillColor(4,120,87); doc.roundedRect(M, cy', 'doc.setFillColor(217,30,80); doc.roundedRect(M, cy')  # CTA
 assert '4,120,87' not in js
+sub('ink(); doc.setFontSize(22);',
+    'if(n === 1){ if(r.onTrack) doc.setTextColor(11,122,62); else doc.setTextColor(179,22,63); } else ink();\n      doc.setFontSize(22);')
 sub('doc.text("Your numbers", M, y);', 'doc.setTextColor(179,22,63); doc.text("Your numbers", M, y);')
 sub('''    rows.forEach(function(row){
       y += 20;''', '''    rows.forEach(function(row, i){

@@ -238,6 +238,34 @@
     100%{box-shadow:0 0 0 3px rgba(217,30,80,.2),0 0 0 0 rgba(255,131,112,0)}
   }
 
+  /* ---------- conditional colour ----------
+     Green (success) once the goal is reached, red (brand fuchsia) while it is not.
+     The title block and the PDF form are always green. Each uses the pale tint of its own colour. */
+  .hero{background:var(--success-surface);border:1.5px solid var(--success);border-radius:var(--radius-xl);padding:var(--space-6)}
+  .hero h1{color:var(--success)}
+  .hero .basis{color:var(--label)}
+
+  .outcome.is-green{background:var(--success-surface);border-color:var(--success);color:var(--success);box-shadow:none}
+  .outcome.is-green .b{color:var(--success)}
+  .outcome.is-red{background:var(--primary-surface);border-color:var(--primary);color:var(--primary-surface-foreground)}
+  .outcome.is-red .b{color:var(--primary-hover);font-size:var(--text-3xl);line-height:1.2}
+  .outcome.is-green .q,.outcome.is-red .q{color:var(--label);border-top-color:var(--border-strong)}
+
+  .plan:has(.is-green){background-color:var(--surface);background-image:none;border-color:var(--success)}
+  .plan:has(.is-green) .trio .v,.plan:has(.is-green) .eyebrow{color:var(--success)}
+  .plan:has(.is-green) hr{border-top-color:var(--success-surface)}
+  .plan:has(.is-red){background-color:var(--surface);background-image:none;border-color:var(--primary)}
+
+  .gate{background-color:var(--success-surface);background-image:none;border-color:var(--success)}
+  .gate h2{color:var(--success)}
+  .gate .btn-primary{background:var(--success);animation-name:cta-halo-green}
+  .gate .btn-primary:hover{background:var(--success);box-shadow:var(--shadow-md)}
+  @keyframes cta-halo-green{
+    0%{box-shadow:0 0 0 0 rgba(11,122,62,.5),0 6px 20px rgba(11,122,62,.25)}
+    70%{box-shadow:0 0 0 14px transparent,0 6px 20px rgba(11,122,62,.25)}
+    100%{box-shadow:0 0 0 0 transparent,0 6px 20px rgba(11,122,62,.25)}
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{animation:none!important;transition-duration:.01ms!important}
   }
@@ -926,7 +954,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     function white(){ doc.setTextColor(255,255,255); }
 
     /* header band */
-    doc.setFillColor(217,30,80); doc.rect(0, 0, W, 118, "F");
+    doc.setFillColor(11,122,62); doc.rect(0, 0, W, 118, "F");
     doc.setFillColor(0,177,176); doc.rect(0, 118, W, 4, "F");
     white();
     doc.setFont(FONT,"bold"); doc.setFontSize(11);
@@ -954,7 +982,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     /* the three headline results */
     var y = 140;
     function step(n, tag, big, small){
-      var skin = [[255,233,239,249,163,184],[227,247,246,85,202,200],[251,242,221,254,200,77]][n - 1];
+      var skin = [r.onTrack ? [227,243,232,11,122,62] : [255,233,239,217,30,80],[227,247,246,85,202,200],[251,242,221,254,200,77]][n - 1];
       doc.setFillColor(skin[0],skin[1],skin[2]); doc.setDrawColor(skin[3],skin[4],skin[5]); doc.setLineWidth(1.2);
       doc.roundedRect(M, y, CW, 76, 10, 10, "FD");
       doc.setFillColor(217,30,80); doc.circle(M + 26, y + 24, 9, "F");
@@ -962,7 +990,8 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       doc.text(String(n), M + 26, y + 27.5, { align:"center" });
       doc.setTextColor(163,20,58); doc.setFontSize(9.5);
       doc.text(tag, M + 42, y + 27.5, { charSpace:0.8 });
-      ink(); doc.setFontSize(22);
+      if(n === 1){ if(r.onTrack) doc.setTextColor(11,122,62); else doc.setTextColor(179,22,63); } else ink();
+      doc.setFontSize(22);
       doc.text(big, W - M - 18, y + 33, { align:"right" });
       muted(); doc.setFont(FONT,"normal"); doc.setFontSize(10.5);
       doc.text(small, M + 17, y + 58);
