@@ -11,8 +11,9 @@
   /* Zoltan Gero brand system, Shine v3. Tokens copied from design-system/tokens.css, light theme only.
      Components read role tokens only. */
   :root{
-    --primary-50:#FFE9EF; --primary-600:#D91E50; --primary-700:#B3163F; --primary-800:#A3143A;
-    --live-500:#00B1B0; --live-700:#00807F; --live-800:#006564;
+    --primary-50:#FFE9EF; --primary-200:#F9A3B8; --primary-600:#D91E50; --primary-700:#B3163F; --primary-800:#A3143A;
+    --live-50:#E3F7F6; --live-300:#55CAC8; --live-500:#00B1B0; --live-700:#00807F; --live-800:#006564;
+    --coral:#FF8370; --freesia:#FEC84D;
     --ink:#0E1330; --label:#4A5068; --muted-text:#666C84; --border-strong-c:#D5D8E3; --border-c:#E6E8F0;
     --surface-alt-c:#F0F1F6; --ground:#F7F8FB; --white:#FFFFFF; --neutral-400:#9A9FB3;
 
@@ -188,6 +189,53 @@
   .diag summary{padding:0;min-height:0;font-size:var(--text-xs);font-weight:600;color:var(--muted-foreground)}
   .diag .adv{padding:var(--space-4) 0 0}
   .diag textarea{width:100%;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--surface-alt);color:var(--foreground);font-family:var(--font-mono);font-size:.75rem;line-height:1.5;padding:var(--space-4);resize:vertical}
+
+  /* ---------- colour pass ----------
+     Every block is tinted. Three skins rotate down the page in a fixed order:
+     fuchsia, blue-green, freesia. Text on every tint is ink, label or fuchsia 700/800 (all AA). */
+  .hero h1,h3,.gate h2,.trio .v,.row.cur .yrs{color:var(--primary-hover)}
+  .help,.hint,.power .lede,.metric .s,.quote .more,.row .amt{color:var(--label)}
+
+  .plan,.inp,.metric,.side,.power,.chartbox,.quote,.outcome,.gate{border-width:1.5px;border-style:solid}
+  /* fuchsia skin */
+  .plan,.inputs > .inp:nth-child(3n),.metric.m1,.power{background-color:var(--primary-surface);border-color:var(--primary-200)}
+  /* blue-green skin */
+  .inputs > .inp:nth-child(3n+1),.metric.m2,.chartbox,.outcome.is-blue{background-color:var(--live-50);border-color:var(--live-300)}
+  /* freesia skin */
+  .inputs > .inp:nth-child(3n+2),.side,.quote,.outcome.is-amber{background-color:var(--warning-surface);border-color:var(--freesia)}
+  .side{color:var(--foreground)}
+  .outcome.is-blue,.outcome.is-amber{color:var(--label)}
+
+  /* the result is the hero: the strongest colour and contrast on the page */
+  .plan{background-image:var(--hero-glow);border-color:var(--primary);border-width:2px}
+  .plan .eyebrow{color:var(--primary-surface-foreground)}
+  .plan hr{border-top-color:var(--primary-200)}
+  .outcome.is-green{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);box-shadow:var(--shadow-md)}
+  .outcome.is-green .b,.outcome.is-green .q{color:var(--primary-foreground)}
+  .outcome.is-green .b{font-size:var(--text-3xl);line-height:1.2}
+  .outcome.is-green .q{border-top-color:var(--primary-200)}
+
+  .row{background:var(--surface)}
+  .gate{background-image:var(--hero-glow);border-width:2px}
+  .sechead .btn{border-color:var(--primary);color:var(--primary-hover)}
+  #diagCopy{background:var(--primary);color:var(--primary-foreground);border-color:transparent}
+  #diagCopy:hover{background:var(--primary-hover)}
+
+  /* just updated: a short glow, then an accent border and a small label that stay for a few seconds */
+  .upd{position:relative}
+  .is-fresh{animation:fresh-glow 1.4s var(--ease-out) 1}
+  .is-fresh,.is-updated{border-color:var(--primary)}
+  .is-updated{box-shadow:0 0 0 3px var(--ring)}
+  .is-fresh::before,.is-updated::before{
+    content:"Updated";position:absolute;top:-11px;right:12px;padding:2px 10px;border-radius:var(--radius-full);
+    background:var(--primary);color:var(--primary-foreground);border:1.5px solid var(--surface);
+    font-family:var(--font-mono);font-size:.6875rem;font-weight:700;line-height:1.5;letter-spacing:.08em;text-transform:uppercase;
+  }
+  @keyframes fresh-glow{
+    0%{box-shadow:0 0 0 0 rgba(228,34,86,.55),0 0 0 0 rgba(255,131,112,0)}
+    40%{box-shadow:0 0 0 6px rgba(228,34,86,.2),0 0 30px 6px rgba(255,131,112,.5)}
+    100%{box-shadow:0 0 0 3px rgba(217,30,80,.2),0 0 0 0 rgba(255,131,112,0)}
+  }
 
   @media (prefers-reduced-motion: reduce){
     *{animation:none!important;transition-duration:.01ms!important}
@@ -381,6 +429,43 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 @@SCRIPT@@
+</script>
+<script>
+/* Brand layer only: marks a block as "Updated" when the number it shows has changed. It reads the page, it never changes a value. */
+(function(){
+  var WATCH = [["oCurB","#oCurrent"],["oCurS","#oCurrent"],["oReqB","#oRequired"],["oBonB","#oBonus"],["mPortfolio",".metric.m1"],
+               ["mContrib",".metric.m2"],["sideP","#sideBox"],["pCurYrs",".power"],["chart",".chartbox"],["thanksMsg","#gate"]];
+  var last = {}, dirty = [], timer = null;
+  function read(id){ var el = document.getElementById(id); return el ? (id === "chart" ? el.innerHTML : el.textContent) : ""; }
+  function mark(block){
+    if(!block || block.hidden) return;
+    clearTimeout(block._t1); clearTimeout(block._t2);
+    block.classList.add("upd");
+    block.classList.remove("is-updated", "is-fresh");
+    void block.offsetWidth;
+    block.classList.add("is-fresh");
+    block._t1 = setTimeout(function(){ block.classList.remove("is-fresh"); block.classList.add("is-updated"); }, 1400);
+    block._t2 = setTimeout(function(){ block.classList.remove("is-updated"); }, 9000);
+  }
+  function check(){
+    WATCH.forEach(function(w){
+      var now = read(w[0]);
+      if(last[w[0]] !== undefined && last[w[0]] !== now){
+        if(w[0] !== "thanksMsg" || now.indexOf("Your PDF is ready") === 0){
+          var block = document.querySelector(w[1]);
+          if(dirty.indexOf(block) < 0) dirty.push(block);
+        }
+      }
+      last[w[0]] = now;
+    });
+    clearTimeout(timer);
+    timer = setTimeout(function(){ dirty.forEach(mark); dirty = []; }, 350);
+  }
+  try{
+    WATCH.forEach(function(w){ last[w[0]] = read(w[0]); });
+    new MutationObserver(check).observe(document.querySelector(".card"), { subtree:true, childList:true, characterData:true });
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
