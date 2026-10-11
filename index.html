@@ -8,26 +8,26 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap">
 <style>
-  /* Zoltan Gero brand system, Shine v3. Tokens copied from design-system/tokens.css, light theme only.
-     Components read role tokens only. */
+  /* Colour palette: exactly the set below, nothing added or adjusted. Light theme only.
+     Fonts, type scale, spacing, radius and motion timings stay from the brand system. */
   :root{
-    --primary-50:#FFE9EF; --primary-200:#F9A3B8; --primary-600:#D91E50; --primary-700:#B3163F; --primary-800:#A3143A;
-    --live-50:#E3F7F6; --live-300:#55CAC8; --live-500:#00B1B0; --live-700:#00807F; --live-800:#006564;
-    --coral:#FF8370; --freesia:#FEC84D;
-    --ink:#0E1330; --label:#4A5068; --muted-text:#666C84; --border-strong-c:#D5D8E3; --border-c:#E6E8F0;
-    --surface-alt-c:#F0F1F6; --ground:#F7F8FB; --white:#FFFFFF; --neutral-400:#9A9FB3;
+    --text:#0F172A; --muted:#475569; --page:#F5F7FA; --card:#FFFFFF; --line:#E2E8F0; --white:#FFFFFF;
+    --teal:#0E7490; --teal-tint:#E6F4F7; --navy:#1E3A8A; --navy-tint:#E8EDFB; --emerald:#047857; --emerald-tint:#E7F6F0;
+    --amber:#B45309; --amber-tint:#FEF3E2; --amber-dark:#92400E;
 
-    --success:#0B7A3E; --success-surface:#E3F3E8;
-    --warning-text:#6B4E00; --warning-surface:#FBF2DD;
-    --danger-text:#A33A00; --danger-surface:#FFF1E8; --danger-border:rgba(242,101,27,.4);
+    /* role tokens: every component reads these, they point at the palette above */
+    --ink:var(--text); --label:var(--muted); --neutral-400:var(--muted);
+    --success:var(--emerald); --success-surface:var(--emerald-tint);
+    --warning-text:var(--amber-dark); --warning-surface:var(--amber-tint);
+    --danger-text:var(--amber-dark); --danger-surface:var(--amber-tint); --danger-border:var(--amber);
 
-    --background:var(--ground); --foreground:var(--ink); --surface:var(--white); --surface-alt:var(--surface-alt-c);
-    --muted-foreground:var(--muted-text);
-    --primary:var(--primary-600); --primary-hover:var(--primary-700); --primary-foreground:#FFFFFF;
-    --primary-surface:var(--primary-50); --primary-surface-foreground:var(--primary-800);
-    --link:var(--live-700); --link-hover:var(--live-800); --live:var(--live-500);
-    --border:var(--border-c); --border-strong:var(--border-strong-c); --input:var(--border-strong-c);
-    --ring:rgba(217,30,80,.2); --ring-solid:var(--primary-600);
+    --background:var(--page); --foreground:var(--text); --surface:var(--card); --surface-alt:var(--page);
+    --muted-foreground:var(--muted);
+    --primary:var(--teal); --primary-hover:var(--teal); --primary-foreground:var(--white);
+    --primary-surface:var(--teal-tint); --primary-surface-foreground:var(--text);
+    --link:var(--teal); --link-hover:var(--teal); --live:var(--teal);
+    --border:var(--line); --border-strong:var(--line); --input:var(--muted);
+    --ring:var(--teal-tint); --ring-solid:var(--teal);
 
     --font-sans:"Open Sans","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
     --font-mono:"Geist Mono",ui-monospace,"SF Mono","Cascadia Mono",Menlo,monospace;
@@ -36,13 +36,13 @@
     --space-2:.25rem; --space-3:.5rem; --space-4:.75rem; --space-5:1rem; --space-6:1.25rem; --space-7:1.5rem; --space-8:2rem; --space-9:2.5rem;
     --gutter-mobile:1rem; --container-prose:720px; --block-gap:1.25rem;
     --radius-sm:6px; --radius-md:10px; --radius-lg:12px; --radius-xl:18px; --radius-full:9999px;
-    --shadow-xs:0 1px 2px rgba(14,19,48,.06);
-    --shadow-sm:0 1px 3px rgba(14,19,48,.08),0 1px 2px rgba(14,19,48,.04);
-    --shadow-md:0 4px 12px rgba(14,19,48,.08);
+    --shadow-xs:0 1px 2px rgba(15,23,42,.06);
+    --shadow-sm:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+    --shadow-md:0 4px 12px rgba(15,23,42,.08);
     --duration-fast:120ms; --duration-base:180ms; --ease-standard:cubic-bezier(.4,0,.2,1); --ease-out:cubic-bezier(0,0,.2,1); --ease-inout:cubic-bezier(.4,0,.2,1);
-    --dot-grid:radial-gradient(rgba(14,19,48,.07) 1px,transparent 1px); --dot-grid-size:20px;
-    --hero-glow:radial-gradient(520px 260px at 100% 0%,rgba(255,131,112,.22),transparent 70%),radial-gradient(360px 200px at 0% 100%,rgba(254,200,77,.22),transparent 70%);
-    --hairline:linear-gradient(90deg,var(--primary-600),var(--live-500));
+    --dot-grid:radial-gradient(var(--line) 1px,transparent 1px); --dot-grid-size:20px;
+    --hero-glow:none;
+    --hairline:linear-gradient(90deg,var(--teal),var(--navy));
     color-scheme:light;
   }
 
@@ -152,9 +152,9 @@
   .btn-primary:hover{background:var(--primary-hover);border-color:transparent;transform:translateY(-1px)}
   .btn-primary::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:sheen 3.2s var(--ease-inout) infinite;pointer-events:none}
   @keyframes cta-halo{
-    0%{box-shadow:0 0 0 0 rgba(228,34,86,.5),0 6px 20px rgba(255,131,112,.35)}
-    70%{box-shadow:0 0 0 14px transparent,0 6px 20px rgba(255,131,112,.35)}
-    100%{box-shadow:0 0 0 0 transparent,0 6px 20px rgba(255,131,112,.35)}
+    0%{box-shadow:0 0 0 0 var(--teal)}
+    70%{box-shadow:0 0 0 14px transparent}
+    100%{box-shadow:0 0 0 0 transparent}
   }
   @keyframes sheen{0%,70%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
 
@@ -190,80 +190,67 @@
   .diag .adv{padding:var(--space-4) 0 0}
   .diag textarea{width:100%;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--surface-alt);color:var(--foreground);font-family:var(--font-mono);font-size:.75rem;line-height:1.5;padding:var(--space-4);resize:vertical}
 
-  /* ---------- colour pass ----------
-     Every block is tinted. Three skins rotate down the page in a fixed order:
-     fuchsia, blue-green, freesia. Text on every tint is ink, label or fuchsia 700/800 (all AA). */
-  .hero h1,h3,.gate h2,.trio .v,.row.cur .yrs{color:var(--primary-hover)}
-  .help,.hint,.power .lede,.metric .s,.quote .more,.row .amt,.trio .k,.legend{color:var(--label)}
-  .chartbox text{fill:var(--label)}
+  /* ---------- colour system ----------
+     Teal, Navy and Emerald rotate across the content blocks in that fixed order. A block is its tint with a 4px
+     left border in the strong colour. Amber is used only for "Updated", for a result that has not reached the goal,
+     and for warnings. Nothing on this page is red, pink, magenta or purple. */
+  h1,h2,h3{color:var(--text);text-decoration:underline;text-decoration-color:var(--teal);text-decoration-thickness:4px;text-underline-offset:.22em;text-decoration-skip-ink:none}
 
-  .plan,.inp,.metric,.side,.power,.chartbox,.quote,.outcome,.gate{border-width:1.5px;border-style:solid}
-  /* fuchsia skin */
-  .plan,.inputs > .inp:nth-child(3n),.metric.m1,.power{background-color:var(--primary-surface);border-color:var(--primary-200)}
-  /* blue-green skin */
-  .inputs > .inp:nth-child(3n+1),.metric.m2,.chartbox,.outcome.is-blue{background-color:var(--live-50);border-color:var(--live-300)}
-  /* freesia skin */
-  .inputs > .inp:nth-child(3n+2),.side,.quote,.outcome.is-amber{background-color:var(--warning-surface);border-color:var(--freesia)}
-  .side{color:var(--foreground)}
-  .outcome.is-blue,.outcome.is-amber{color:var(--label)}
+  .hero,.plan,.inp,.metric,.side,.power,.chartbox,.gate,.quote,.outcome{
+    background-color:var(--tint);background-image:none;border:1px solid var(--line);border-left:4px solid var(--strong);box-shadow:var(--shadow-xs);
+  }
+  /* Teal */
+  .hero,.inputs > .inp:nth-child(3n+1),.metric.m2,.chartbox,.outcome.is-amber{--strong:var(--teal);--tint:var(--teal-tint)}
+  /* Navy */
+  .inputs > .inp:nth-child(3n+2),.side,.gate,.outcome.is-blue{--strong:var(--navy);--tint:var(--navy-tint)}
+  /* Emerald */
+  .inputs > .inp:nth-child(3n),.metric.m1,.power,.quote{--strong:var(--emerald);--tint:var(--emerald-tint)}
 
-  /* the result is the hero: the strongest colour and contrast on the page */
-  .plan{background-image:var(--hero-glow);border-color:var(--primary);border-width:2px}
-  .plan .eyebrow{color:var(--primary-surface-foreground)}
-  .plan hr{border-top-color:var(--primary-200)}
-  .outcome.is-green{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);box-shadow:var(--shadow-md)}
-  .outcome.is-green .b,.outcome.is-green .q{color:var(--primary-foreground)}
-  .outcome.is-green .b{font-size:var(--text-3xl);line-height:1.2}
-  .outcome.is-green .q{border-top-color:var(--primary-200)}
+  /* the result screen: the most colour on the page. Emerald once the goal is reached, Amber while it is not. */
+  .plan{--strong:var(--teal);--tint:var(--teal-tint);box-shadow:var(--shadow-md)}
+  .plan:has(.is-green){--strong:var(--emerald);--tint:var(--emerald-tint)}
+  .plan:has(.is-red){--strong:var(--amber);--tint:var(--amber-tint)}
+  .plan .eyebrow{color:var(--text)}
+  .plan .trio .v{color:var(--strong)}
+  .plan hr{border-top-color:var(--strong)}
+  .outcome.is-green{background-color:var(--emerald);border-color:var(--emerald);color:var(--white);box-shadow:var(--shadow-md)}
+  .outcome.is-red{background-color:var(--amber);border-color:var(--amber);color:var(--white);box-shadow:var(--shadow-md)}
+  .outcome.is-green .b,.outcome.is-red .b{color:var(--white);font-size:var(--text-3xl);line-height:1.2}
+  .outcome.is-green .q,.outcome.is-red .q{color:var(--white);border-top-color:var(--white)}
 
-  .row{background:var(--surface)}
-  .gate{background-image:var(--hero-glow);border-width:2px}
-  .sechead .btn{border-color:var(--primary);color:var(--primary-hover)}
-  #diagCopy{background:var(--primary);color:var(--primary-foreground);border-color:transparent}
-  #diagCopy:hover{background:var(--primary-hover)}
+  .metric .v,.row.cur .yrs{color:var(--strong)}
+  .row{background:var(--card);border:1px solid var(--line)}
+  .row.cur{border-color:var(--strong)}
+  .row .gain{background:var(--emerald-tint);color:var(--emerald)}
+  .legend i{border-top-color:var(--teal)}
+  .legend i.t{border-top-color:var(--navy)}
+  .chartbox text{fill:var(--muted)}
+  .hero .who::before{background:var(--teal)}
 
-  /* just updated: a short glow, then an accent border and a small label that stay for a few seconds */
+  /* form controls */
+  .inp input,.adv input,.gate input,.diag textarea{border-color:var(--muted)}
+  .inp input:focus-visible,.adv input:focus-visible,.gate input:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-color:var(--teal);box-shadow:none}
+  .sechead .btn{border-color:var(--teal);color:var(--teal)}
+  #diagCopy{background:var(--teal);color:var(--white);border-color:var(--teal)}
+
+  /* errors and warnings are Amber dark on the Amber tint, never red */
+  .notice,.formerr{background:var(--amber-tint);color:var(--amber-dark);border:1px solid var(--amber)}
+
+  /* just updated: a short Amber glow, then a settled state with an Amber border and a small label */
   .upd{position:relative}
+  .upd.is-fresh:not(.is-green):not(.is-red),.upd.is-updated:not(.is-green):not(.is-red){--tint:var(--amber-tint);--strong:var(--amber)}
   .is-fresh{animation:fresh-glow 1.4s var(--ease-out) 1}
-  .is-fresh,.is-updated{border-color:var(--primary)}
-  .is-updated{box-shadow:0 0 0 3px var(--ring)}
+  .is-fresh,.is-updated{border-color:var(--amber)}
+  .is-updated{box-shadow:0 0 0 3px var(--amber-tint)}
   .is-fresh::before,.is-updated::before{
     content:"Updated";position:absolute;top:-11px;right:12px;padding:2px 10px;border-radius:var(--radius-full);
-    background:var(--primary);color:var(--primary-foreground);border:1.5px solid var(--surface);
+    background:var(--amber);color:var(--white);border:1.5px solid var(--white);
     font-family:var(--font-mono);font-size:.6875rem;font-weight:700;line-height:1.5;letter-spacing:.08em;text-transform:uppercase;
   }
   @keyframes fresh-glow{
-    0%{box-shadow:0 0 0 0 rgba(228,34,86,.55),0 0 0 0 rgba(255,131,112,0)}
-    40%{box-shadow:0 0 0 6px rgba(228,34,86,.2),0 0 30px 6px rgba(255,131,112,.5)}
-    100%{box-shadow:0 0 0 3px rgba(217,30,80,.2),0 0 0 0 rgba(255,131,112,0)}
-  }
-
-  /* ---------- conditional colour ----------
-     Green (success) once the goal is reached, red (brand fuchsia) while it is not.
-     The title block and the PDF form are always green. Each uses the pale tint of its own colour. */
-  .hero{background:var(--success-surface);border:1.5px solid var(--success);border-radius:var(--radius-xl);padding:var(--space-6)}
-  .hero h1{color:var(--success)}
-  .hero .basis{color:var(--label)}
-
-  .outcome.is-green{background:var(--success-surface);border-color:var(--success);color:var(--success);box-shadow:none}
-  .outcome.is-green .b{color:var(--success)}
-  .outcome.is-red{background:var(--primary-surface);border-color:var(--primary);color:var(--primary-surface-foreground)}
-  .outcome.is-red .b{color:var(--primary-hover);font-size:var(--text-3xl);line-height:1.2}
-  .outcome.is-green .q,.outcome.is-red .q{color:var(--label);border-top-color:var(--border-strong)}
-
-  .plan:has(.is-green){background-color:var(--surface);background-image:none;border-color:var(--success)}
-  .plan:has(.is-green) .trio .v,.plan:has(.is-green) .eyebrow{color:var(--success)}
-  .plan:has(.is-green) hr{border-top-color:var(--success-surface)}
-  .plan:has(.is-red){background-color:var(--surface);background-image:none;border-color:var(--primary)}
-
-  .gate{background-color:var(--success-surface);background-image:none;border-color:var(--success)}
-  .gate h2{color:var(--success)}
-  .gate .btn-primary{background:var(--success);animation-name:cta-halo-green}
-  .gate .btn-primary:hover{background:var(--success);box-shadow:var(--shadow-md)}
-  @keyframes cta-halo-green{
-    0%{box-shadow:0 0 0 0 rgba(11,122,62,.5),0 6px 20px rgba(11,122,62,.25)}
-    70%{box-shadow:0 0 0 14px transparent,0 6px 20px rgba(11,122,62,.25)}
-    100%{box-shadow:0 0 0 0 transparent,0 6px 20px rgba(11,122,62,.25)}
+    0%{box-shadow:0 0 0 0 var(--amber)}
+    40%{box-shadow:0 0 0 6px var(--amber-tint),0 0 24px 4px var(--amber)}
+    100%{box-shadow:0 0 0 3px var(--amber-tint)}
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -696,7 +683,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     var out = "", i;
     for(i = 0; i <= 4; i++){
       var yv = yMax * i / 4, yy = Y(yv).toFixed(1);
-      out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--border)" stroke-dasharray="3 3"/>';
+      out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--line)" stroke-dasharray="3 3"/>';
       out += '<text x="' + (L - 8) + '" y="' + (Y(yv) + 4).toFixed(1) + '" text-anchor="end">' + k(yv) + '</text>';
     }
     var step = Math.max(1, Math.ceil(xMax / 8));
@@ -705,8 +692,8 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     }
     out += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Years from Now</text>';
     var ty = Y(c.portfolioNeeded).toFixed(1);
-    out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ty + '" y2="' + ty + '" stroke="var(--primary)" stroke-width="2" stroke-dasharray="5 5"/>';
-    out += '<polyline fill="none" stroke="var(--live)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="' +
+    out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ty + '" y2="' + ty + '" stroke="var(--navy)" stroke-width="2" stroke-dasharray="5 5"/>';
+    out += '<polyline fill="none" stroke="var(--teal)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="' +
       pts.map(function(p){ return X(p.year).toFixed(1) + "," + Y(p.portfolio).toFixed(1); }).join(" ") + '"/>';
     $("chart").innerHTML = out;
   }
@@ -942,6 +929,13 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   function buildPdf(name, r){
     var doc = new window.jspdf.jsPDF({ unit:"pt", format:"a4" });
     var FONT = "helvetica";
+    var SKINS = {
+      teal:  { t:[230,244,247], s:[14,116,144], d:[14,116,144] },
+      navy:  { t:[232,237,251], s:[30,58,138],  d:[30,58,138] },
+      em:    { t:[231,246,240], s:[4,120,87],   d:[4,120,87] },
+      amber: { t:[254,243,226], s:[180,83,9],   d:[146,64,14] }
+    };
+    function skinFor(n){ return [r.onTrack ? SKINS.em : SKINS.amber, SKINS.teal, SKINS.navy][n - 1]; }
     if(PDF_FONTS && !PLAIN_PDF){
       doc.addFileToVFS("OpenSans-400.ttf", PDF_FONTS[0]); doc.addFont("OpenSans-400.ttf", "OpenSans", "normal");
       doc.addFileToVFS("OpenSans-700.ttf", PDF_FONTS[1]); doc.addFont("OpenSans-700.ttf", "OpenSans", "bold");
@@ -949,13 +943,13 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     }
     var W = doc.internal.pageSize.getWidth(), M = 48, CW = W - M*2;
     var usd = function(n){ return "$" + Math.round(n).toLocaleString("en-US"); };
-    function ink(){ doc.setTextColor(14,19,48); }
-    function muted(){ doc.setTextColor(102,108,132); }
+    function ink(){ doc.setTextColor(15,23,42); }
+    function muted(){ doc.setTextColor(71,85,105); }
     function white(){ doc.setTextColor(255,255,255); }
 
     /* header band */
-    doc.setFillColor(11,122,62); doc.rect(0, 0, W, 118, "F");
-    doc.setFillColor(0,177,176); doc.rect(0, 118, W, 4, "F");
+    doc.setFillColor(14,116,144); doc.rect(0, 0, W, 118, "F");
+    doc.setFillColor(30,58,138); doc.rect(0, 118, W, 4, "F");
     white();
     doc.setFont(FONT,"bold"); doc.setFontSize(11);
     doc.text("GHL INCOME CALCULATOR", M, 42, { charSpace:1 });
@@ -982,16 +976,15 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     /* the three headline results */
     var y = 140;
     function step(n, tag, big, small){
-      var skin = [r.onTrack ? [227,243,232,11,122,62] : [255,233,239,217,30,80],[227,247,246,85,202,200],[251,242,221,254,200,77]][n - 1];
-      doc.setFillColor(skin[0],skin[1],skin[2]); doc.setDrawColor(skin[3],skin[4],skin[5]); doc.setLineWidth(1.2);
-      doc.roundedRect(M, y, CW, 76, 10, 10, "FD");
-      doc.setFillColor(217,30,80); doc.circle(M + 26, y + 24, 9, "F");
+      var sk = skinFor(n);
+      doc.setFillColor(sk.t[0],sk.t[1],sk.t[2]); doc.rect(M, y, CW, 76, "F");
+      doc.setFillColor(sk.s[0],sk.s[1],sk.s[2]); doc.rect(M, y, 4, 76, "F");
+      doc.setFillColor(sk.s[0],sk.s[1],sk.s[2]); doc.circle(M + 26, y + 24, 9, "F");
       white(); doc.setFont(FONT,"bold"); doc.setFontSize(10);
       doc.text(String(n), M + 26, y + 27.5, { align:"center" });
-      doc.setTextColor(163,20,58); doc.setFontSize(9.5);
+      doc.setTextColor(sk.d[0],sk.d[1],sk.d[2]); doc.setFontSize(9.5);
       doc.text(tag, M + 42, y + 27.5, { charSpace:0.8 });
-      if(n === 1){ if(r.onTrack) doc.setTextColor(11,122,62); else doc.setTextColor(179,22,63); } else ink();
-      doc.setFontSize(22);
+      doc.setTextColor(sk.d[0],sk.d[1],sk.d[2]); doc.setFontSize(22);
       doc.text(big, W - M - 18, y + 33, { align:"right" });
       muted(); doc.setFont(FONT,"normal"); doc.setFontSize(10.5);
       doc.text(small, M + 17, y + 58);
@@ -1015,7 +1008,8 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     /* inputs and results table */
     y += 16;
     ink(); doc.setFont(FONT,"bold"); doc.setFontSize(13);
-    doc.setTextColor(179,22,63); doc.text("Your numbers", M, y);
+    doc.text("Your numbers", M, y);
+    doc.setFillColor(14,116,144); doc.rect(M, y + 5, 40, 3, "F");
     y += 8;
     var rows = [
       ["Your age now", String(r.currentAge)],
@@ -1029,11 +1023,11 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
       ["Your contributions", usd(r.totalContributed)],
       ["Investment gains", usd(r.investmentGains)]
     ];
-    doc.setDrawColor(230,232,240); doc.setLineWidth(0.75);
+    doc.setDrawColor(226,232,240); doc.setLineWidth(0.75);
     doc.setFontSize(10.5);
     rows.forEach(function(row, i){
       y += 20;
-      if(i % 2 === 0){ doc.setFillColor(227,247,246); doc.rect(M - 6, y - 13.5, CW + 12, 20, "F"); }
+      if(i % 2 === 0){ doc.setFillColor(230,244,247); doc.rect(M - 6, y - 13.5, CW + 12, 20, "F"); }
       muted(); doc.setFont(FONT,"normal"); doc.text(row[0], M, y);
       ink(); doc.setFont(FONT,"bold"); doc.text(row[1], W - M, y, { align:"right" });
       doc.line(M, y + 6.5, W - M, y + 6.5);
@@ -1042,7 +1036,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
     /* CTA */
     var H = doc.internal.pageSize.getHeight();
     var cy = H - 158;
-    doc.setFillColor(217,30,80); doc.roundedRect(M, cy, CW, 74, 10, 10, "F");
+    doc.setFillColor(14,116,144); doc.roundedRect(M, cy, CW, 74, 10, 10, "F");
     white(); doc.setFont(FONT,"bold"); doc.setFontSize(13);
     doc.text("Next step: build this plan with a group in my 6-pillar cohort program.", M + 18, cy + 30);
     doc.setFontSize(11);
