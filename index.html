@@ -444,7 +444,7 @@
   <p class="disc"><strong>Disclaimer:</strong> This calculator is for educational and informational purposes only. It does not constitute financial, investment, tax, or legal advice. Results are estimates based on assumptions and may not reflect actual outcomes. Please consult with a qualified financial advisor, tax professional, or legal expert before making any financial decisions. Past performance does not guarantee future results.</p>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <script>
 /* ===== SETTINGS: the two things to edit ===== */
 var WEBHOOK_URL = "";   // GHL inbound webhook. Empty = no POST, the PDF is still delivered.
@@ -458,7 +458,7 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   var FIELDS = Object.keys(DEFAULTS);
   var MAX_MONTHS = 600; // 50 years max
   var S = Object.assign({}, DEFAULTS);
-  var APP_VERSION = "1.2.0";
+  var APP_VERSION = "1.2.1";
 
   /* Every number is forced into a sane range, so a typo or a damaged saved state can never break the maths. */
   var LIMITS = { currentAge:[0,120], targetRetirementAge:[0,120], monthlySavings:[0,1e7], monthlyRetirementNeed:[0,1e7], sideIncome:[0,1e7], currentSavings:[0,1e9], investmentReturn:[0,50] };
@@ -1060,8 +1060,9 @@ var PROGRAM_URL = "https://example.com/6-pillar-cohort";   // placeholder: the 6
   var IN_VIEWER = !!(window.claude && typeof window.claude.use === "function");
   var FILE_NAME = "ghl-income-plan.pdf";
   var PDF_LIB_URLS = [
-    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-    "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+    "vendor/jspdf.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js",
+    "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"
   ];
   var PLAIN_PDF = false;                    // true while a failed PDF is rebuilt in the simplest possible form
   var pdfAssetsReady = fontsReady;   // anything else the PDF waits for before it is built
